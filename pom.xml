@@ -4,7 +4,7 @@
 
   <groupId>com.github.zhang-fuxing</groupId>
   <artifactId>common-utils</artifactId>
-  <version>0.0.2</version>
+  <version>0.0.3</version>
   <packaging>jar</packaging>
 
   <name>common-utils</name>

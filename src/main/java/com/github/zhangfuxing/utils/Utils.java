@@ -1,7 +1,7 @@
 package com.github.zhangfuxing.utils;
 
-import java.text.SimpleDateFormat;
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
 import java.util.*;
 import java.util.function.*;
@@ -14,7 +14,18 @@ import java.util.stream.Stream;
  * @email zhangfuxing1010@163.com
  */
 public abstract class Utils {
-	private static final SimpleDateFormat FULL_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+
+	/**
+	 * 默认时区
+	 */
+	public static final ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Shanghai");
+
+	/**
+	 * 默认日期时间格式：yyyy-MM-dd HH:mm:ss.SSS
+	 * <p>
+	 * DateTimeFormatter 不可变，可安全地在多线程间共享（SimpleDateFormat 不是线程安全的）
+	 */
+	public static final DateTimeFormatter FULL_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
 
 	/**
@@ -245,7 +256,7 @@ public abstract class Utils {
 
 
 	public static long toMillisecond(TemporalAccessor temporalAccessor) {
-		return toMillisecond(temporalAccessor, ZoneId.of("Asia/Shanghai"));
+		return toMillisecond(temporalAccessor, DEFAULT_ZONE);
 	}
 
 	public static long toMillisecond(TemporalAccessor temporalAccessor, ZoneId zoneId) {
@@ -301,7 +312,7 @@ public abstract class Utils {
 	}
 
 	/**
-	 * 格式化日期 ： yyyy-MM-dd HH:mm:ss.sss
+	 * 格式化日期 ： yyyy-MM-dd HH:mm:ss.SSS
 	 *
 	 * @param date 日期
 	 *
@@ -311,18 +322,34 @@ public abstract class Utils {
 		if (date == null) {
 			return null;
 		}
-		return FULL_DATE_FORMAT.format(date);
+		return formatMillis(date.getTime());
 	}
 
 	/**
-	 * 格式化日期 ： yyyy-MM-dd HH:mm:ss.sss
+	 * 格式化日期 ： yyyy-MM-dd HH:mm:ss.SSS
+	 * <p>
+	 * 支持 LocalDate（取当天 00:00:00.000）、LocalTime（取当天该时刻）、LocalDateTime、Instant 等
 	 *
 	 * @param temporalAccessor 日期
 	 *
 	 * @return 格式化后的日期
 	 */
 	public static String formatDatetime(TemporalAccessor temporalAccessor) {
-		return formatDatetime(toDate(temporalAccessor));
+		if (temporalAccessor == null) {
+			return null;
+		}
+		return formatMillis(toMillisecond(temporalAccessor));
+	}
+
+	/**
+	 * 格式化时间戳 ： yyyy-MM-dd HH:mm:ss.SSS
+	 *
+	 * @param millisecond 时间戳（毫秒）
+	 *
+	 * @return 格式化后的日期
+	 */
+	private static String formatMillis(long millisecond) {
+		return FULL_DATE_FORMAT.format(Instant.ofEpochMilli(millisecond).atZone(DEFAULT_ZONE));
 	}
 
 	/**
