@@ -11,7 +11,7 @@
 
 ## 环境要求
 
-- 源码仅使用 Java 8 语法（lambda / 方法引用），本仓库在 JDK 17 + Maven 3.9 下构建验证通过
+- 源码仅使用 Java 8 语法（lambda / 方法引用），`pom.xml` 通过 `maven.compiler.release=8` 约束字节码版本；本仓库在 JDK 17 + Maven 3.9 下构建验证通过
 
 ## 快速开始
 
@@ -140,7 +140,8 @@ src/main/java/com/github/zhangfuxing/
 ├── string/StringFormat.java   # 字符串格式化
 └── utils/
     ├── FormatUtils.java       # StringFormat 静态门面
-    └── MapUtils.java          # Map 构建与转换
+    ├── MapUtils.java          # Map 构建与转换
+    └── Utils.java             # 通用工具：空判断、集合转 Map、日期转换、安全取值、遍历
 ```
 
 ## 许可证
