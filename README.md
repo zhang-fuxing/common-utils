@@ -8,6 +8,7 @@
 - **支持转义**：`\{` 输出字面量 `{`，不会误伤 Windows 路径
 - **容错优先**：参数不够或索引越界时，占位符原样保留，不抛异常（适合日志、模板场景）
 - **null 可控**：参数为 `null` 时输出 `"null"` 还是空字符串，由实例配置决定
+- **数据大小格式化**：字节数转 `1.5 KB` 这类可读文本，支持 1024 / 1000 进制、小数位数与空格配置；也能反向解析 `300MB` 并在各单位间互转
 
 ## 环境要求
 
@@ -114,6 +115,70 @@ sf.format("hello, {}!", (Object) null);                     // hello, N/A!
 FormatUtils.formatString("hello, {}!", "world");
 FormatUtils.formatStringByIndex("hello, {0}!", "world");
 FormatUtils.formatStringByNamed("hello, {name}!", "name", "world");
+
+FormatUtils.formatDataSize(1536);               // 1.5 KB
+FormatUtils.formatDataSize(1536, 0);            // 2 KB
+FormatUtils.parseDataSize("300MB");             // 314572800
+FormatUtils.convertDataSize("300MB", "GB");     // 0.29 GB
+```
+
+## DataSizeFormat 数据大小格式化
+
+把字节数格式化为可读文本，默认 1024 进制、保留 2 位小数并去掉末尾多余的 0：
+
+```java
+DataSizeFormat f = new DataSizeFormat();
+
+f.format(0);                 // 0 B
+f.format(1023);              // 1023 B
+f.format(1536);              // 1.5 KB
+f.format(1234567);           // 1.18 MB
+f.format(-1536);             // -1.5 KB
+f.format(Long.MAX_VALUE);    // 8 EB
+```
+
+单位依次为 `B`、`KB`、`MB`、`GB`、`TB`、`PB`、`EB`，配置项均可链式调用：
+
+```java
+new DataSizeFormat().setScale(0).format(1536);                      // 2 KB     小数位数
+new DataSizeFormat().setSpace(false).format(1536);                  // 1.5KB    去掉数值与单位间的空格
+new DataSizeFormat().setStripTrailingZeros(false).format(1024);     // 1.00 KB  保留末尾的 0
+new DataSizeFormat(DataSizeFormat.DECIMAL_BASE, 2).format(1500);    // 1.5 KB   改用 1000 进制
+```
+
+`Utils` 里也提供了默认配置的快捷方法：
+
+```java
+Utils.formatDataSize(1536);      // 1.5 KB
+Utils.formatDataSize(1536, 0);   // 2 KB
+```
+
+### 智能解析与单位换算
+
+用户输入的 `300MB` 这类文本可以直接解析成字节数，也能在任意单位间互转：
+
+```java
+DataSizeFormat f = new DataSizeFormat();
+
+f.parse("300MB");                              // 314572800
+f.parse("1.5 GB");                             // 1610612736
+f.parse("1024");                               // 1024（不带单位按字节）
+f.parse("-1.5kb");                             // -1536
+f.parse("512字节");                             // 512
+
+f.format(314572800, DataSizeUnit.GB);          // 0.29 GB    强制单位输出
+f.convert("300MB", DataSizeUnit.GB);           // 0.29 GB    解析 + 换算
+f.convertTo("300MB", DataSizeUnit.GB);         // 0.29296875 换算后的数值
+f.toUnit(314572800, DataSizeUnit.MB);          // 300
+```
+
+单位写法宽松，忽略大小写：`B`、`KB`、`MB`、`GB`、`TB`、`PB`、`EB` 为标准写法，同时支持单字母（`K`/`M`/`G`）、IEC（`KiB`/`MiB`）和中文（`字节`/`兆字节`）。单位倍数由实例的进制决定，所以 `parse(format(bytes)) == bytes` 恒成立（`toUnit` / `convertTo` 返回精确值，取整只发生在 `format`）。
+
+`Utils` 的快捷方法：
+
+```java
+Utils.parseDataSize("300MB");           // 314572800
+Utils.convertDataSize("300MB", "GB");   // 0.29 GB
 ```
 
 ## MapUtils Map 工具
@@ -137,11 +202,14 @@ mvn clean package # 打包
 
 ```
 src/main/java/com/github/zhangfuxing/
+├── number/
+│   ├── DataSizeFormat.java    # 数据大小格式化与解析
+│   └── DataSizeUnit.java      # 数据大小单位与换算
 ├── string/StringFormat.java   # 字符串格式化
 └── utils/
     ├── FormatUtils.java       # StringFormat 静态门面
     ├── MapUtils.java          # Map 构建与转换
-    └── Utils.java             # 通用工具：空判断、集合转 Map、日期转换、安全取值、遍历
+    └── Utils.java             # 通用工具：空判断、集合转 Map、日期转换、数据大小、安全取值、遍历
 ```
 
 ## 许可证

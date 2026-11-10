@@ -353,6 +353,66 @@ public abstract class Utils {
 	}
 
 	/**
+	 * 格式化数据大小，1024 进制、保留 2 位小数、去掉末尾多余的 0
+	 * <p>
+	 * 例：formatDataSize(0) -> "0 B"，formatDataSize(1536) -> "1.5 KB"，formatDataSize(1048576) -> "1 MB"
+	 *
+	 * @param bytes 字节数
+	 *
+	 * @return 格式化后的文本
+	 *
+	 * @see FormatUtils#formatDataSize(long)
+	 */
+	public static String formatDataSize(long bytes) {
+		return FormatUtils.formatDataSize(bytes);
+	}
+
+	/**
+	 * 格式化数据大小，指定小数位数（1024 进制）
+	 * <p>
+	 * 例：formatDataSize(1536, 0) -> "2 KB"，formatDataSize(1536, 3) -> "1.5 KB"
+	 *
+	 * @param bytes 字节数
+	 * @param scale 小数位数，范围 0 ~ 10
+	 *
+	 * @return 格式化后的文本
+	 */
+	public static String formatDataSize(long bytes, int scale) {
+		return FormatUtils.formatDataSize(bytes, scale);
+	}
+
+	/**
+	 * 解析数据大小文本为字节数
+	 * <p>
+	 * 例：parseDataSize("300MB") -> 314572800，parseDataSize("1.5 GB") -> 1610612736
+	 *
+	 * @param text 数据大小文本，如 "300MB"、"1.5GB"、"1024"
+	 *
+	 * @return 字节数
+	 *
+	 * @see FormatUtils#parseDataSize(String)
+	 */
+	public static long parseDataSize(String text) {
+		return FormatUtils.parseDataSize(text);
+	}
+
+	/**
+	 * 数据大小单位换算
+	 * <p>
+	 * 例：convertDataSize("300MB", "GB") -> "0.29 GB"，convertDataSize("1024", "KB") -> "1 KB"
+	 *
+	 * @param text 数据大小文本，如 "300MB"
+	 * @param unit 目标单位，如 "GB"、"MB"、"字节"，忽略大小写
+	 *
+	 * @return 目标单位下的格式化文本
+	 *
+	 * @see FormatUtils#convertDataSize(String, String)
+	 */
+	public static String convertDataSize(String text, String unit) {
+		return FormatUtils.convertDataSize(text, unit);
+	}
+
+	/**
 	 * 安全读取值，如果源对象为空或函数为空则返回默认值
 	 *
 	 * @param source         源对象

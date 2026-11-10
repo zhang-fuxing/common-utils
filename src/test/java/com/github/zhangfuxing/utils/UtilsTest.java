@@ -53,6 +53,24 @@ public class UtilsTest extends TestCase {
 		assertEquals(0L, Utils.toMillisecond((TemporalAccessor) null));
 	}
 
+	public void testFormatDataSize() {
+		assertEquals("0 B", Utils.formatDataSize(0));
+		assertEquals("1.5 KB", Utils.formatDataSize(1536));
+		assertEquals("2 KB", Utils.formatDataSize(1536, 0));
+	}
+
+	public void testParseDataSize() {
+		assertEquals(314572800L, Utils.parseDataSize("300MB"));
+		assertEquals(1610612736L, Utils.parseDataSize("1.5 GB"));
+		assertEquals(1024L, Utils.parseDataSize("1024"));
+	}
+
+	public void testConvertDataSize() {
+		assertEquals("0.29 GB", Utils.convertDataSize("300MB", "GB"));
+		assertEquals("1 KB", Utils.convertDataSize("1024", "kb"));
+		assertEquals("314572800 B", Utils.convertDataSize("300MB", "字节"));
+	}
+
 	/**
 	 * 并发格式化：SimpleDateFormat 在此场景下会错乱，DateTimeFormatter 应稳定输出
 	 */
