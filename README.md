@@ -1,6 +1,6 @@
 # common-utils
 
-日常开发中常用的 Java 工具类集合，目前包含字符串格式化、Map 构建与转换能力。
+日常开发中常用的 Java 工具类集合，目前包含字符串格式化、Map 构建与转换、数据大小格式化以及控制台进度条能力。
 
 ## 特性
 
@@ -9,6 +9,7 @@
 - **容错优先**：参数不够或索引越界时，占位符原样保留，不抛异常（适合日志、模板场景）
 - **null 可控**：参数为 `null` 时输出 `"null"` 还是空字符串，由实例配置决定
 - **数据大小格式化**：字节数转 `1.5 KB` 这类可读文本，支持 1024 / 1000 进制、小数位数与空格配置；也能反向解析 `300MB` 并在各单位间互转
+- **控制台进度条**：内置 9 种文本样式，支持自定义字符、宽度、百分比与附加文本；可原地刷新，并提供进度变化钩子
 
 ## 环境要求
 
@@ -181,6 +182,105 @@ Utils.parseDataSize("300MB");           // 314572800
 Utils.convertDataSize("300MB", "GB");   // 0.29 GB
 ```
 
+## ProgressBar 控制台进度条
+
+把任务进度输出到控制台或日志，默认样式为实心方块、宽度 30、显示百分比：
+
+```java
+ProgressBar bar = ProgressBar.of(100);
+for (int i = 0; i < 100; i++) {
+    // 处理任务
+    bar.advance().print();      // \r 覆盖当前行，不换行
+}
+bar.finish();                   // 补满进度并换行
+```
+
+- `advance()` / `advance(long delta)`：增加进度，超过总量时按总量处理
+- `setCurrent(long current)`：直接设置进度，同样会做上限保护
+- `render()`：只返回文本，不输出
+- `print()` / `println()`：原地刷新 / 输出并换行
+- `finish()`：进度置为总量并换行
+
+```java
+ProgressBar bar = ProgressBar.of(10);
+bar.setCurrent(5).render();     // [███████████████░░░░░░░░░░░░░░░] 50%
+```
+
+### 内置样式 ProgressBarStyle
+
+以宽度 10、进度 50% 为例：
+
+| 样式 | 已完成 | 未完成 | 示例 |
+|---|---|---|---|
+| `BLOCK` | `█` | `░` | `[█████░░░░░] 50%` |
+| `SHADE` | `▓` | `▒` | `[▓▓▓▓▓▒▒▒▒▒] 50%` |
+| `ASCII` | `#` | `-` | `[#####-----] 50%` |
+| `ARROW` | `=` | `-` | `[====>-----] 50%` |
+| `SQUARE` | `■` | `□` | `[■■■■■□□□□□] 50%` |
+| `DOT` | `●` | `○` | `[●●●●●○○○○○] 50%` |
+| `STAR` | `★` | `☆` | `[★★★★★☆☆☆☆☆] 50%` |
+| `LINE` | `━` | `─` | `━━━━━───── 50%` |
+| `PERCENT` | - | - | `50%` |
+
+样式通过构造参数或 `setStyle` 指定，默认 `BLOCK`：
+
+```java
+ProgressBar bar = ProgressBar.of(100, ProgressBarStyle.ARROW);
+bar.setStyle(ProgressBarStyle.DOT);   // 运行时切换
+```
+
+`ARROW` 的 `>` 会占用已完成部分的最后一格；进度为 0 或 100% 时不显示箭头。
+
+### 自定义样式
+
+所有样式项都可以链式覆盖，未设置的项沿用当前样式：
+
+```java
+ProgressBar bar = ProgressBar.of(100)
+        .setWidth(10)
+        .setCompleteChar("★")
+        .setIncompleteChar("☆")
+        .setHeadChar(">")
+        .setLeftBracket("|")
+        .setRightBracket("|")
+        .setShowPercent(false)
+        .setShowCount(true)
+        .setSuffix("处理中");
+
+bar.setCurrent(50).render();    // |★★★★>☆☆☆☆☆| (50/100) 处理中
+```
+
+### 进度钩子
+
+`onChange` 注册回调，进度值变化时会收到 `ProgressEvent`：
+
+```java
+ProgressBar bar = ProgressBar.of(100);
+bar.onChange(event -> {
+    log.info("{}", event.getText());                    // 渲染后的进度条文本
+    progressBarComponent.setValue(event.getPercent());  // 同步到界面
+});
+```
+
+`ProgressEvent` 提供 `getCurrent()`、`getTotal()`、`getRemaining()`、`getPercent()`、`getText()` 与 `isComplete()`。
+只有进度值真正变化时才回调；`onChange(null)` 可取消钩子。
+
+### 快捷工具类 ProgressBarUtils
+
+一次性输出无需创建实例，静态门面默认使用 `BLOCK` 样式、宽度 30：
+
+```java
+ProgressBarUtils.render(5, 10);                          // [███████████████░░░░░░░░░░░░░░░] 50%
+ProgressBarUtils.render(5, 10, ProgressBarStyle.ASCII);  // [###############---------------] 50%
+ProgressBarUtils.print(5, 10);                           // 原地输出，不换行
+ProgressBarUtils.println(5, 10);                         // 输出并换行
+
+ProgressBar bar = ProgressBarUtils.track(10, ProgressBarStyle.DOT);
+```
+
+需要自定义样式、钩子或输出流时，用 `track` 拿到 `ProgressBar` 实例再配置。
+`ProgressBar` 的更新、渲染、输出方法均为同步方法，同一个实例可在多线程中共享；输出先后顺序取决于调用顺序。
+
 ## MapUtils Map 工具
 
 ```java
@@ -205,10 +305,16 @@ src/main/java/com/github/zhangfuxing/
 ├── number/
 │   ├── DataSizeFormat.java    # 数据大小格式化与解析
 │   └── DataSizeUnit.java      # 数据大小单位与换算
+├── progress/
+│   ├── ProgressBar.java       # 控制台文本进度条
+│   ├── ProgressBarStyle.java  # 内置进度条样式
+│   ├── ProgressEvent.java     # 进度快照
+│   └── ProgressListener.java  # 进度变化钩子
 ├── string/StringFormat.java   # 字符串格式化
 └── utils/
     ├── FormatUtils.java       # StringFormat 静态门面
     ├── MapUtils.java          # Map 构建与转换
+    ├── ProgressBarUtils.java  # ProgressBar 静态门面
     └── Utils.java             # 通用工具：空判断、集合转 Map、日期转换、数据大小、安全取值、遍历
 ```
 
