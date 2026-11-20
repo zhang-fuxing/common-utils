@@ -1,6 +1,6 @@
 # common-utils
 
-日常开发中常用的 Java 工具类集合，目前包含字符串格式化、Map 构建与转换、数据大小格式化、数字解析、反射以及控制台进度条能力。
+日常开发中常用的 Java 工具类集合，目前包含字符串格式化、Map 构建与转换、数据大小格式化、数字解析、反射、Lambda 名称提取以及控制台进度条能力。
 
 ## 特性
 
@@ -11,6 +11,7 @@
 - **数据大小格式化**：字节数转 `1.5 KB` 这类可读文本，支持 1024 / 1000 进制、小数位数与空格配置；也能反向解析 `300MB` 并在各单位间互转
 - **数字解析与转换**：把任意对象解析为 Byte / Short / Integer / Long / Float / Double / BigInteger / BigDecimal；`parseXxx` 严格校验，`toXxx` 宽松转换，支持默认值与 null 安全
 - **反射工具**：字段读写、方法调用、构造实例；自动处理继承、私有成员、重载与变长参数，并按 JDK 版本选择访问策略
+- **Lambda 名称提取**：通过可序列化方法引用获取方法名，并按 JavaBean 规则推导字段名
 - **控制台进度条**：内置 9 种文本样式，支持自定义字符、宽度、百分比与附加文本；可原地刷新，并提供进度变化钩子
 
 ## 环境要求
@@ -288,6 +289,34 @@ User copy = ReflectUtils.newInstance(User.class, "王五", 20);
 - 目标包未对当前模块开放时，`makeAccessible` 返回 `false`，字段或方法操作抛出带说明的 `IllegalStateException`；
 - 工具不会使用 `Unsafe` 强行绕过模块限制。确实需要访问 JDK 内部类时，应由使用方通过 `--add-opens` 显式授权，或改用目标类的公开 API。
 
+## LambdaUtils 方法名/字段名提取
+
+通过可序列化的方法引用读取真实方法名，并按 JavaBean 命名规则推导字段名。
+
+```java
+LambdaUtils.getMethodName(User::getName);      // getName
+LambdaUtils.getMethodName(user::getName);      // getName
+LambdaUtils.getMethodName(User::setName);      // setName
+
+LambdaUtils.getFieldName(User::getName);       // name
+LambdaUtils.getFieldName(user::isActive);      // active
+LambdaUtils.getFieldName(User::setName);       // name
+LambdaUtils.getFieldName(User::getURL);        // URL
+```
+
+| 方法 | 说明 |
+|---|---|
+| `getMethodName(NoArg)` | 无参数方法引用，如 `user::getName` |
+| `getMethodName(OneArg<T>)` | 单参数方法引用，如 `User::getName` |
+| `getMethodName(TwoArg<T, U>)` | 双参数方法引用，如 `User::setName` |
+| `getFieldName(NoArg)` | 从无参数 getter 推导字段名 |
+| `getFieldName(OneArg<T>)` | 从单参数 getter / setter 推导字段名 |
+| `getFieldName(TwoArg<T, U>)` | 从双参数 setter 推导字段名 |
+
+`getFieldName` 会去掉 `get`、`is`、`set` 前缀并做首字母小写；没有这些前缀时按 record / fluent 风格原样返回。`getURL` 这类前两个字母大写的名称会保持 `URL`。
+
+> 只支持方法引用，不支持 `() -> user.getName()` 这类 lambda 代码块。代码块会生成 `lambda$...` 合成方法，无法可靠还原真实方法名。
+
 ## ProgressBar 控制台进度条
 
 把任务进度输出到控制台或日志，默认样式为实心方块、宽度 30、显示百分比：
@@ -412,6 +441,7 @@ src/main/java/com/github/zhangfuxing/
 │   ├── DataSizeFormat.java    # 数据大小格式化与解析
 │   ├── DataSizeUnit.java      # 数据大小单位与换算
 │   └── NumberParse.java       # 任意对象转数字类型（严格解析 / 宽松转换）
+├── lambda/LambdaUtils.java    # 方法引用提取方法名 / 字段名
 ├── progress/
 │   ├── ProgressBar.java       # 控制台文本进度条
 │   ├── ProgressBarStyle.java  # 内置进度条样式
