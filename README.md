@@ -1,6 +1,6 @@
 # common-utils
 
-日常开发中常用的 Java 工具类集合，目前包含字符串格式化、Map 构建与转换、数据大小格式化、数字解析以及控制台进度条能力。
+日常开发中常用的 Java 工具类集合，目前包含字符串格式化、Map 构建与转换、数据大小格式化、数字解析、反射以及控制台进度条能力。
 
 ## 特性
 
@@ -10,6 +10,7 @@
 - **null 可控**：参数为 `null` 时输出 `"null"` 还是空字符串，由实例配置决定
 - **数据大小格式化**：字节数转 `1.5 KB` 这类可读文本，支持 1024 / 1000 进制、小数位数与空格配置；也能反向解析 `300MB` 并在各单位间互转
 - **数字解析与转换**：把任意对象解析为 Byte / Short / Integer / Long / Float / Double / BigInteger / BigDecimal；`parseXxx` 严格校验，`toXxx` 宽松转换，支持默认值与 null 安全
+- **反射工具**：字段读写、方法调用、构造实例；自动处理继承、私有成员、重载与变长参数，并按 JDK 版本选择访问策略
 - **控制台进度条**：内置 9 种文本样式，支持自定义字符、宽度、百分比与附加文本；可原地刷新，并提供进度变化钩子
 
 ## 环境要求
@@ -255,6 +256,38 @@ NumberParse.toBigDecimal(0.1f);        // 0.1
 - 其他对象先转字符串，整型目标按 `BigDecimal` 解析后转换，`Float` / `Double` 按 `Float.parseFloat` / `Double.parseDouble` 规则解析；
 - `toBigDecimal` 对 `Float` / `Double` 使用十进制字符串构造，避免二进制浮点误差；`NaN` / `Infinity` 返回 `null`。
 
+## ReflectUtils 反射工具
+
+`ReflectUtils` 封装字段读写、方法调用和构造实例，支持私有成员、父类成员、重载方法和变长参数。
+
+```java
+User user = new User("张三", 18);
+
+Object name = ReflectUtils.getFieldValue(user, "name");
+ReflectUtils.setFieldValue(user, "name", "李四");
+
+String greet = (String) ReflectUtils.invokeMethod(user, "greet", "Hello");
+int max = (int) ReflectUtils.invokeStaticMethod(Math.class, "max", 1, 2);
+User copy = ReflectUtils.newInstance(User.class, "王五", 20);
+```
+
+| 方法 | 说明 |
+|---|---|
+| `getFieldValue(Object, String)` / `setFieldValue(Object, String, Object)` | 读写实例字段，支持私有字段和父类字段 |
+| `getStaticFieldValue(Class, String)` / `setStaticFieldValue(Class, String, Object)` | 读写静态字段 |
+| `invokeMethod(Object, String, Object...)` | 调用实例方法，自动匹配重载和变长参数 |
+| `invokeStaticMethod(Class, String, Object...)` | 调用静态方法 |
+| `newInstance(Class, Object...)` | 调用构造方法创建实例，支持私有构造方法 |
+| `getField` / `getMethod` / `getConstructor` | 按名称和参数类型查找成员 |
+| `makeAccessible(AccessibleObject)` | 尝试开启反射访问，返回是否成功 |
+
+### JDK 版本适配
+
+- JDK 8：使用 `setAccessible(true)`；
+- JDK 9+：使用 `trySetAccessible()`，遵守模块访问控制；
+- 目标包未对当前模块开放时，`makeAccessible` 返回 `false`，字段或方法操作抛出带说明的 `IllegalStateException`；
+- 工具不会使用 `Unsafe` 强行绕过模块限制。确实需要访问 JDK 内部类时，应由使用方通过 `--add-opens` 显式授权，或改用目标类的公开 API。
+
 ## ProgressBar 控制台进度条
 
 把任务进度输出到控制台或日志，默认样式为实心方块、宽度 30、显示百分比：
@@ -384,6 +417,7 @@ src/main/java/com/github/zhangfuxing/
 │   ├── ProgressBarStyle.java  # 内置进度条样式
 │   ├── ProgressEvent.java     # 进度快照
 │   └── ProgressListener.java  # 进度变化钩子
+├── reflect/ReflectUtils.java  # 反射工具：字段、方法、构造与 JDK 访问适配
 ├── string/StringFormat.java   # 字符串格式化
 └── utils/
     ├── FormatUtils.java       # StringFormat 静态门面
