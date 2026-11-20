@@ -1,11 +1,13 @@
 package com.github.zhangfuxing.progress;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * {@link ProgressBar} 单元测试
@@ -13,8 +15,9 @@ import java.util.List;
  * @author 张福兴
  * @date 2026/11/20
  */
-public class ProgressBarTest extends TestCase {
+public class ProgressBarTest {
 
+	@Test
 	public void testDefaultRender() {
 		ProgressBar bar = ProgressBar.of(10);
 		assertEquals("[" + repeat("░", 30) + "] 0%", bar.render());
@@ -25,6 +28,7 @@ public class ProgressBarTest extends TestCase {
 		assertTrue(bar.isComplete());
 	}
 
+	@Test
 	public void testBuiltInStyles() {
 		assertEquals("[#####-----] 50%", bar(ProgressBarStyle.ASCII).render());
 		assertEquals("[====>-----] 50%", bar(ProgressBarStyle.ARROW).render());
@@ -36,6 +40,7 @@ public class ProgressBarTest extends TestCase {
 		assertEquals("50%", bar(ProgressBarStyle.PERCENT).render());
 	}
 
+	@Test
 	public void testArrowHeadAtBoundaries() {
 		ProgressBar bar = ProgressBar.of(10, ProgressBarStyle.ARROW).setWidth(10);
 		assertEquals("[----------] 0%", bar.render());
@@ -43,12 +48,14 @@ public class ProgressBarTest extends TestCase {
 		assertEquals("[==========] 100%", bar.render());
 	}
 
+	@Test
 	public void testSwitchStyle() {
 		ProgressBar bar = ProgressBar.of(10).setWidth(10).setCurrent(5);
 		bar.setStyle(ProgressBarStyle.ARROW);
 		assertEquals("[====>-----] 50%", bar.render());
 	}
 
+	@Test
 	public void testCustomStyle() {
 		ProgressBar bar = ProgressBar.of(100).setWidth(10).setCurrent(50)
 				.setCompleteChar("★")
@@ -60,6 +67,7 @@ public class ProgressBarTest extends TestCase {
 		assertEquals("|★★★★>☆☆☆☆☆|", bar.render());
 	}
 
+	@Test
 	public void testCountAndSuffix() {
 		ProgressBar bar = ProgressBar.of(10, ProgressBarStyle.ASCII).setWidth(10).setCurrent(5)
 				.setShowCount(true)
@@ -67,6 +75,7 @@ public class ProgressBarTest extends TestCase {
 		assertEquals("[#####-----] 50% (5/10) done", bar.render());
 	}
 
+	@Test
 	public void testNullCharsTreatedAsEmpty() {
 		ProgressBar bar = ProgressBar.of(10, ProgressBarStyle.ASCII).setWidth(10).setCurrent(5)
 				.setHeadChar(null)
@@ -76,6 +85,7 @@ public class ProgressBarTest extends TestCase {
 		assertEquals("#####----- 50%", bar.render());
 	}
 
+	@Test
 	public void testZeroTotal() {
 		ProgressBar bar = ProgressBar.of(0);
 		assertEquals(100, bar.getPercent());
@@ -84,6 +94,7 @@ public class ProgressBarTest extends TestCase {
 		assertEquals(1.0, bar.getRatio(), 0.0);
 	}
 
+	@Test
 	public void testPercentAndRatio() {
 		ProgressBar bar = ProgressBar.of(3);
 		bar.setCurrent(1);
@@ -98,6 +109,7 @@ public class ProgressBarTest extends TestCase {
 		assertEquals(1.0, bar.getRatio(), 0.0);
 	}
 
+	@Test
 	public void testPercentNeverHundredBeforeComplete() {
 		ProgressBar bar = ProgressBar.of(Long.MAX_VALUE);
 		bar.setCurrent(Long.MAX_VALUE - 1);
@@ -105,6 +117,7 @@ public class ProgressBarTest extends TestCase {
 		assertEquals(99, bar.getPercent());
 	}
 
+	@Test
 	public void testAdvance() {
 		ProgressBar bar = ProgressBar.of(10);
 		assertEquals(1, bar.advance().getCurrent());
@@ -113,12 +126,14 @@ public class ProgressBarTest extends TestCase {
 		assertEquals(0, bar.advance().getRemaining());
 	}
 
+	@Test
 	public void testReset() {
 		ProgressBar bar = ProgressBar.of(10).setCurrent(5);
 		assertEquals(0, bar.reset().getCurrent());
 		assertEquals(0, bar.getPercent());
 	}
 
+	@Test
 	public void testListener() {
 		List<ProgressEvent> events = new ArrayList<>();
 		ProgressBar bar = ProgressBar.of(10, ProgressBarStyle.ASCII).setWidth(10);
@@ -151,6 +166,7 @@ public class ProgressBarTest extends TestCase {
 		assertEquals(2, events.size());
 	}
 
+	@Test
 	public void testListenerGetsRenderedText() {
 		List<ProgressEvent> events = new ArrayList<>();
 		ProgressBar bar = ProgressBar.of(10, ProgressBarStyle.PERCENT);
@@ -159,6 +175,7 @@ public class ProgressBarTest extends TestCase {
 		assertEquals("50%", events.get(0).getText());
 	}
 
+	@Test
 	public void testPrintAndFinish() {
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 		ProgressBar bar = ProgressBar.of(10, ProgressBarStyle.ASCII, new PrintStream(buffer)).setWidth(10);
@@ -173,6 +190,7 @@ public class ProgressBarTest extends TestCase {
 		assertEquals(10, bar.getCurrent());
 	}
 
+	@Test
 	public void testSetOut() {
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 		ProgressBar bar = ProgressBar.of(10, ProgressBarStyle.PERCENT);
@@ -181,6 +199,7 @@ public class ProgressBarTest extends TestCase {
 		assertEquals("\r50%", buffer.toString());
 	}
 
+	@Test
 	public void testInvalidArguments() {
 		assertIllegalArgument(() -> ProgressBar.of(-1));
 		assertIllegalArgument(() -> ProgressBar.of(10, null));
@@ -198,12 +217,7 @@ public class ProgressBarTest extends TestCase {
 	}
 
 	private void assertIllegalArgument(Runnable action) {
-		try {
-			action.run();
-			fail("应当抛出 IllegalArgumentException");
-		} catch (IllegalArgumentException expected) {
-			// expected
-		}
+		assertThrows(IllegalArgumentException.class, action::run);
 	}
 
 	private static String repeat(String value, int count) {

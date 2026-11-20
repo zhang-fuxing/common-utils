@@ -14,6 +14,7 @@
 ## 环境要求
 
 - 源码仅使用 Java 8 语法（lambda / 方法引用），`pom.xml` 通过 `maven.compiler.release=8` 约束字节码版本；本仓库在 JDK 17 + Maven 3.9 下构建验证通过
+- 测试基于 JUnit 5（Jupiter），通过 `mvn test` 运行
 
 ## 快速开始
 

@@ -1,8 +1,10 @@
 package com.github.zhangfuxing.number;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * {@link DataSizeFormat} 单元测试
@@ -10,16 +12,18 @@ import java.math.BigDecimal;
  * @author 张福兴
  * @date 2026/11/9
  */
-public class DataSizeFormatTest extends TestCase {
+public class DataSizeFormatTest {
 
 	private final DataSizeFormat dataSizeFormat = new DataSizeFormat();
 
+	@Test
 	public void testFormatZeroAndBytes() {
 		assertEquals("0 B", dataSizeFormat.format(0));
 		assertEquals("1 B", dataSizeFormat.format(1));
 		assertEquals("1023 B", dataSizeFormat.format(1023));
 	}
 
+	@Test
 	public void testFormatBinaryUnits() {
 		assertEquals("1 KB", dataSizeFormat.format(1024));
 		assertEquals("1.5 KB", dataSizeFormat.format(1536));
@@ -30,15 +34,18 @@ public class DataSizeFormatTest extends TestCase {
 		assertEquals("1 PB", dataSizeFormat.format(1024L * 1024 * 1024 * 1024 * 1024));
 	}
 
+	@Test
 	public void testFormatMaxLong() {
 		assertEquals("8 EB", dataSizeFormat.format(Long.MAX_VALUE));
 	}
 
+	@Test
 	public void testFormatNegative() {
 		assertEquals("-1.5 KB", dataSizeFormat.format(-1536));
 		assertEquals("-1 MB", dataSizeFormat.format(-1024L * 1024));
 	}
 
+	@Test
 	public void testFormatWithScale() {
 		assertEquals("2 KB", new DataSizeFormat().setScale(0).format(1536));
 		assertEquals("1 KB", new DataSizeFormat().setScale(0).format(1024));
@@ -48,6 +55,7 @@ public class DataSizeFormatTest extends TestCase {
 				.format(1024));
 	}
 
+	@Test
 	public void testFormatDecimalBase() {
 		DataSizeFormat decimalFormat = new DataSizeFormat(DataSizeFormat.DECIMAL_BASE, 2);
 		assertEquals("1 KB", decimalFormat.format(1000));
@@ -57,37 +65,26 @@ public class DataSizeFormatTest extends TestCase {
 		assertEquals("1 MB", decimalFormat.format(999999));
 	}
 
+	@Test
 	public void testFormatWithoutSpace() {
 		assertEquals("1.5KB", new DataSizeFormat().setSpace(false).format(1536));
 	}
 
+	@Test
 	public void testKeepTrailingZeros() {
 		assertEquals("1.00 KB", new DataSizeFormat().setStripTrailingZeros(false).format(1024));
 	}
 
+	@Test
 	public void testInvalidConfig() {
-		try {
-			new DataSizeFormat().setScale(-1);
-			fail("scale 为负数时应抛出 IllegalArgumentException");
-		} catch (IllegalArgumentException expected) {
-			// expected
-		}
-		try {
-			new DataSizeFormat().setScale(11);
-			fail("scale 超过 10 时应抛出 IllegalArgumentException");
-		} catch (IllegalArgumentException expected) {
-			// expected
-		}
-		try {
-			new DataSizeFormat().setBase(1);
-			fail("base 小于 2 时应抛出 IllegalArgumentException");
-		} catch (IllegalArgumentException expected) {
-			// expected
-		}
+		assertThrows(IllegalArgumentException.class, () -> new DataSizeFormat().setScale(-1));
+		assertThrows(IllegalArgumentException.class, () -> new DataSizeFormat().setScale(11));
+		assertThrows(IllegalArgumentException.class, () -> new DataSizeFormat().setBase(1));
 	}
 
 	// ---------------------------------------------------------------- 解析
 
+	@Test
 	public void testParse() {
 		assertEquals(314572800L, dataSizeFormat.parse("300MB"));
 		assertEquals(314572800L, dataSizeFormat.parse("300 mb"));
@@ -101,28 +98,33 @@ public class DataSizeFormatTest extends TestCase {
 		assertEquals(512L, dataSizeFormat.parse("512字节"));
 	}
 
+	@Test
 	public void testParseWithoutUnit() {
 		assertEquals(1024L, dataSizeFormat.parse("1024"));
 		assertEquals(0L, dataSizeFormat.parse("0"));
 	}
 
+	@Test
 	public void testParseNegative() {
 		assertEquals(-1536L, dataSizeFormat.parse("-1.5kb"));
 		assertEquals(-314572800L, dataSizeFormat.parse("-300MB"));
 	}
 
+	@Test
 	public void testParseRoundTrip() {
 		for (long bytes : new long[]{0L, 1L, 1024L, 1536L, 1048576L}) {
 			assertEquals(bytes, dataSizeFormat.parse(dataSizeFormat.format(bytes)));
 		}
 	}
 
+	@Test
 	public void testParseDecimalBase() {
 		DataSizeFormat decimalFormat = new DataSizeFormat(DataSizeFormat.DECIMAL_BASE, 2);
 		assertEquals(1000L, decimalFormat.parse("1KB"));
 		assertEquals(1500L, decimalFormat.parse("1.5KB"));
 	}
 
+	@Test
 	public void testParseInvalid() {
 		assertParseFailed(null);
 		assertParseFailed("");
@@ -133,12 +135,14 @@ public class DataSizeFormatTest extends TestCase {
 		assertParseFailed("1XB");
 	}
 
+	@Test
 	public void testParseOverflow() {
 		assertParseFailed("99999999999EB");
 	}
 
 	// ------------------------------------------------------------ 单位换算
 
+	@Test
 	public void testFormatWithUnit() {
 		assertEquals("300 MB", dataSizeFormat.format(314572800L, DataSizeUnit.MB));
 		assertEquals("0.29 GB", dataSizeFormat.format(314572800L, DataSizeUnit.GB));
@@ -146,6 +150,7 @@ public class DataSizeFormatTest extends TestCase {
 		assertEquals("307200 KB", dataSizeFormat.format(314572800L, DataSizeUnit.KB));
 	}
 
+	@Test
 	public void testToUnit() {
 		assertEquals(0, new BigDecimal("0.29296875").compareTo(dataSizeFormat.toUnit(314572800L, DataSizeUnit.GB)));
 		assertEquals(0, new BigDecimal("300").compareTo(dataSizeFormat.toUnit(314572800L, DataSizeUnit.MB)));
@@ -153,17 +158,20 @@ public class DataSizeFormatTest extends TestCase {
 		assertEquals(0, new BigDecimal("-0.29296875").compareTo(dataSizeFormat.toUnit(-314572800L, DataSizeUnit.GB)));
 	}
 
+	@Test
 	public void testConvert() {
 		assertEquals("0.29 GB", dataSizeFormat.convert("300MB", DataSizeUnit.GB));
 		assertEquals("314572800 B", dataSizeFormat.convert("300MB", DataSizeUnit.B));
 		assertEquals("1024 KB", dataSizeFormat.convert("1MB", DataSizeUnit.KB));
 	}
 
+	@Test
 	public void testConvertTo() {
 		assertEquals(0, new BigDecimal("0.29296875").compareTo(dataSizeFormat.convertTo("300MB", DataSizeUnit.GB)));
 		assertEquals(0, new BigDecimal("1024").compareTo(dataSizeFormat.convertTo("1MB", DataSizeUnit.KB)));
 	}
 
+	@Test
 	public void testDataSizeUnitOf() {
 		assertEquals(DataSizeUnit.B, DataSizeUnit.of(null));
 		assertEquals(DataSizeUnit.B, DataSizeUnit.of(""));
@@ -173,20 +181,11 @@ public class DataSizeFormatTest extends TestCase {
 		assertEquals(DataSizeUnit.GB, DataSizeUnit.of("G"));
 		assertEquals(6, DataSizeUnit.EB.getIndex());
 		assertEquals(0, new BigDecimal("1073741824").compareTo(DataSizeUnit.GB.factor(DataSizeFormat.BINARY_BASE)));
-		try {
-			DataSizeUnit.of("XB");
-			fail("未知单位时应抛出 IllegalArgumentException");
-		} catch (IllegalArgumentException expected) {
-			// expected
-		}
+		assertThrows(IllegalArgumentException.class, () -> DataSizeUnit.of("XB"));
 	}
 
 	private void assertParseFailed(String text) {
-		try {
-			dataSizeFormat.parse(text);
-			fail("非法输入应抛出 IllegalArgumentException: " + text);
-		} catch (IllegalArgumentException expected) {
-			// expected
-		}
+		assertThrows(IllegalArgumentException.class, () -> dataSizeFormat.parse(text),
+				"非法输入应抛出 IllegalArgumentException: " + text);
 	}
 }

@@ -2,10 +2,12 @@ package com.github.zhangfuxing.utils;
 
 import com.github.zhangfuxing.progress.ProgressBar;
 import com.github.zhangfuxing.progress.ProgressBarStyle;
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * {@link ProgressBarUtils} 单元测试
@@ -13,8 +15,9 @@ import java.io.PrintStream;
  * @author 张福兴
  * @date 2026/11/20
  */
-public class ProgressBarUtilsTest extends TestCase {
+public class ProgressBarUtilsTest {
 
+	@Test
 	public void testTrack() {
 		ProgressBar bar = ProgressBarUtils.track(10, ProgressBarStyle.DOT);
 		assertEquals(10, bar.getTotal());
@@ -24,6 +27,7 @@ public class ProgressBarUtilsTest extends TestCase {
 		assertEquals(10, ProgressBarUtils.track(10).getTotal());
 	}
 
+	@Test
 	public void testRender() {
 		assertEquals(ProgressBar.of(10).setCurrent(5).render(), ProgressBarUtils.render(5, 10));
 		assertEquals("[███████████████░░░░░░░░░░░░░░░] 50%", ProgressBarUtils.render(5, 10));
@@ -32,12 +36,14 @@ public class ProgressBarUtilsTest extends TestCase {
 		assertEquals("50%", ProgressBarUtils.render(5, 10, ProgressBarStyle.PERCENT));
 	}
 
+	@Test
 	public void testRenderClamps() {
 		assertEquals(100, ProgressBar.of(10).setCurrent(20).getPercent());
 		assertEquals("[##########] 100%", ProgressBar.of(10, ProgressBarStyle.ASCII).setWidth(10)
 				.setCurrent(20).render());
 	}
 
+	@Test
 	public void testPrintln() {
 		PrintStream original = System.out;
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -50,6 +56,7 @@ public class ProgressBarUtilsTest extends TestCase {
 		assertEquals("\r[###############---------------] 50%" + System.lineSeparator(), buffer.toString());
 	}
 
+	@Test
 	public void testPrintInPlace() {
 		PrintStream original = System.out;
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
