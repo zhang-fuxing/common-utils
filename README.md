@@ -1,6 +1,6 @@
 # common-utils
 
-日常开发中常用的 Java 工具类集合，目前包含字符串格式化、Map 构建与转换、数据大小格式化以及控制台进度条能力。
+日常开发中常用的 Java 工具类集合，目前包含字符串格式化、Map 构建与转换、数据大小格式化、数字解析以及控制台进度条能力。
 
 ## 特性
 
@@ -9,6 +9,7 @@
 - **容错优先**：参数不够或索引越界时，占位符原样保留，不抛异常（适合日志、模板场景）
 - **null 可控**：参数为 `null` 时输出 `"null"` 还是空字符串，由实例配置决定
 - **数据大小格式化**：字节数转 `1.5 KB` 这类可读文本，支持 1024 / 1000 进制、小数位数与空格配置；也能反向解析 `300MB` 并在各单位间互转
+- **数字解析与转换**：把任意对象解析为 Byte / Short / Integer / Long / Float / Double / BigInteger / BigDecimal；`parseXxx` 严格校验，`toXxx` 宽松转换，支持默认值与 null 安全
 - **控制台进度条**：内置 9 种文本样式，支持自定义字符、宽度、百分比与附加文本；可原地刷新，并提供进度变化钩子
 
 ## 环境要求
@@ -183,6 +184,77 @@ Utils.parseDataSize("300MB");           // 314572800
 Utils.convertDataSize("300MB", "GB");   // 0.29 GB
 ```
 
+## NumberParse 数字解析与转换
+
+把任意对象解析为指定的数字类型，覆盖 8 种常用类型。`NumberParse` 提供两套语义：
+
+- `parseXxx`：严格解析，值必须精确且在目标类型范围内，失败抛 `NumberFormatException`
+- `toXxx`：宽松转换，按 `Number.byteValue()` / `intValue()` 等窄化语义处理，允许小数截断和溢出回绕，失败返回 `null`
+
+### 严格解析
+
+每种类型提供三个方法：
+
+| 类型 | 严格解析（失败抛 `NumberFormatException`） | 带默认值 | 失败返回 null |
+|---|---|---|---|
+| `Byte` | `parseByte(Object)` | `parseByte(Object, Byte)` | `parseByteOrNull(Object)` |
+| `Short` | `parseShort(Object)` | `parseShort(Object, Short)` | `parseShortOrNull(Object)` |
+| `Integer` | `parseInt(Object)` | `parseInt(Object, Integer)` | `parseIntOrNull(Object)` |
+| `Long` | `parseLong(Object)` | `parseLong(Object, Long)` | `parseLongOrNull(Object)` |
+| `Float` | `parseFloat(Object)` | `parseFloat(Object, Float)` | `parseFloatOrNull(Object)` |
+| `Double` | `parseDouble(Object)` | `parseDouble(Object, Double)` | `parseDoubleOrNull(Object)` |
+| `BigInteger` | `parseBigInteger(Object)` | `parseBigInteger(Object, BigInteger)` | `parseBigIntegerOrNull(Object)` |
+| `BigDecimal` | `parseBigDecimal(Object)` | `parseBigDecimal(Object, BigDecimal)` | `parseBigDecimalOrNull(Object)` |
+
+```java
+NumberParse.parseInt(" 123 ");                       // 123
+NumberParse.parseInt(123L);                          // 123
+NumberParse.parseInt(new BigDecimal("123.00"));      // 123
+NumberParse.parseInt("abc", 0);                      // 0
+NumberParse.parseIntOrNull("abc");                   // null
+
+NumberParse.parseLong("1234567890123");              // 1234567890123
+NumberParse.parseBigInteger("12345678901234567890"); // 12345678901234567890
+NumberParse.parseBigDecimal("123.45");               // 123.45
+```
+
+严格解析规则：
+
+- 字符串先去除首尾空白，再交给目标类型的标准解析方法；
+- 输入本身是 `Number` 时按数值转换，整型目标会校验“必须是整数”和“必须在目标类型范围内”，例如 `parseInt(new BigDecimal("123.00"))` 返回 `123`，`parseInt(1.5)` 抛异常；
+- 其他对象先调用 `toString()` 再按字符串解析；
+- `null` 在严格解析中抛 `NumberFormatException`，在带默认值方法中返回默认值，在 `OrNull` 方法中返回 `null`。
+
+### 宽松转换
+
+| 类型 | 方法 | `Number` 输入的转换语义 |
+|---|---|---|
+| `Byte` | `toByte(Object)` | `byteValue()` |
+| `Short` | `toShort(Object)` | `shortValue()` |
+| `Integer` | `toInt(Object)` | `intValue()` |
+| `Long` | `toLong(Object)` | `longValue()` |
+| `Float` | `toFloat(Object)` | `floatValue()` |
+| `Double` | `toDouble(Object)` | `doubleValue()` |
+| `BigInteger` | `toBigInteger(Object)` | 小数向零截断 |
+| `BigDecimal` | `toBigDecimal(Object)` | 小数精确保留；`NaN` / `Infinity` 返回 `null` |
+
+```java
+NumberParse.toByte(1.5d);              // 1，截断小数
+NumberParse.toByte(300);               // 44，按 byte 回绕
+NumberParse.toShort(32768);            // -32768，按 short 回绕
+NumberParse.toInt("1.5");              // 1，字符串按 BigDecimal 转换
+NumberParse.toInt("abc");              // null
+NumberParse.toBigInteger(1.5d);        // 1，向零截断
+NumberParse.toBigDecimal(0.1f);        // 0.1
+```
+
+宽松转换规则：
+
+- `toXxx` 不抛 `NumberFormatException`，`null`、空白字符串或无法识别的输入返回 `null`；
+- `Number` 输入直接使用对应包装类的 `xxxValue()`，因此小数会向零截断，定长整型溢出会回绕；
+- 其他对象先转字符串，整型目标按 `BigDecimal` 解析后转换，`Float` / `Double` 按 `Float.parseFloat` / `Double.parseDouble` 规则解析；
+- `toBigDecimal` 对 `Float` / `Double` 使用十进制字符串构造，避免二进制浮点误差；`NaN` / `Infinity` 返回 `null`。
+
 ## ProgressBar 控制台进度条
 
 把任务进度输出到控制台或日志，默认样式为实心方块、宽度 30、显示百分比：
@@ -305,7 +377,8 @@ mvn clean package # 打包
 src/main/java/com/github/zhangfuxing/
 ├── number/
 │   ├── DataSizeFormat.java    # 数据大小格式化与解析
-│   └── DataSizeUnit.java      # 数据大小单位与换算
+│   ├── DataSizeUnit.java      # 数据大小单位与换算
+│   └── NumberParse.java       # 任意对象转数字类型（严格解析 / 宽松转换）
 ├── progress/
 │   ├── ProgressBar.java       # 控制台文本进度条
 │   ├── ProgressBarStyle.java  # 内置进度条样式
