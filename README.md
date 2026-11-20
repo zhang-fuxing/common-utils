@@ -21,21 +21,52 @@
 
 ## 快速开始
 
+### 源码构建
+
 ```bash
 git clone git@github.com:zhang-fuxing/common-utils.git
 cd common-utils
 mvn clean install
 ```
 
+### 通过 JitPack 使用
+
+在 `pom.xml` 中添加 JitPack 仓库：
+
+```xml
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+```
+
+然后添加依赖：
+
 ```xml
 <dependency>
     <groupId>com.github.zhang-fuxing</groupId>
     <artifactId>common-utils</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.8</version>
 </dependency>
 ```
 
-> 尚未发布到公共仓库，需先执行 `mvn install` 安装到本地仓库。
+Gradle：
+
+```groovy
+repositories {
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    implementation 'com.github.zhang-fuxing:common-utils:0.0.8'
+}
+```
+
+> JitPack 会在标签首次被请求时自动构建。构建状态可在
+> [https://jitpack.io/#zhang-fuxing/common-utils](https://jitpack.io/#zhang-fuxing/common-utils) 查看；
+> 构建完成前依赖可能暂时无法下载。
 
 ## StringFormat 字符串格式化
 
